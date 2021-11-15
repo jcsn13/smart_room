@@ -110,25 +110,38 @@ void cli(void * vParam)
 	uint8_t caracter;
 	while(1)
 	{
-		// CLI to test nucleo functions
 		caracter = readchar(USART_2);
 		switch(caracter){
-			case 'L' || 'l':
-				changeLedState();
+			case 'L':
+				changeLedState(1);
 				break;
-//			case 'P' || 'p':
-//				// changeDoorState();
-//				break;
+			case 'D':
+				changeLedStage(0);
+				break;
+			case "A":
+				changeACState(1);
+				break;
+			case "Z":
+				changeACState(0);
+				break;
+			case "O":
+				changeDoorState(1);
+				break;
+			case "C":
+				changeDoorState(0);
+				break;
+			case "P":
+				changeAlarmState(1);
+				break;
+			case "H":
+				changeAlarmState(0);
+				break;
 		}
 	}
 }
 
-void changeLedState(void){
-	if(HAL_GPIO_ReadPin(LD2_GPIO_Port, LD2_Pin) == 0){
-		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-	} else {
-		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
-	}
+void changeLedState(int mode){
+	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, mode);
 }
 
 //void changeDoorState(void * vParam){
@@ -172,6 +185,12 @@ void usart_1_fcn(void * vParam){
 		if( c != 0){
 			sendchar(c, USART_2);
 		}
+		if(c == 'L'){
+			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+		} else if (c == 'D'){
+			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+		}
+
 	}
 }
 //Rotina de tratamento de interrupcao da USART2
