@@ -119,8 +119,7 @@ void cli(void * vParam)
 
 		char buff[8];
 		uint8_t temp = readVoltage();
-		sprintf(buff,"%d\r\n", temp);
-		sendString(buff, USART_2);
+		sprintf(buff,"\n%d\r\n", temp);
 		sendString(buff, USART_1);
 
 		switch(caracter){
@@ -154,7 +153,7 @@ void changeLedState(uint8_t mode){
 int8_t readVoltage(void){
 	HAL_ADC_Start(&hadc1);
 	HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
-	return HAL_ADC_GetValue(&hadc1) / 25;
+	return HAL_ADC_GetValue(&hadc1) / 26;
 }
 
 void changeDoorState(uint8_t mode){
@@ -162,15 +161,15 @@ void changeDoorState(uint8_t mode){
 }
 
 //IMPORTANTE: Esta taska deve ser removida no projeto final
-void usart_1_fcn(void * vParam){
-	char c;
-	while(1){
-		c = readchar(USART_1);
-		if( c != 0){
-			sendchar(c, USART_2);
-		}
-	}
-}
+//void usart_1_fcn(void * vParam){
+//	char c;
+//	while(1){
+//		c = readchar(USART_1);
+//		if( c != 0){
+//			sendchar(c, USART_2);
+//		}
+//	}
+//}
 //Rotina de tratamento de interrupcao da USART2
 void USART_2_IRQHandler(void)
 {
@@ -312,12 +311,12 @@ int main(void)
 			  NULL);      /* ponteiro para o handle da task */
 
   //IMPORTANTE: Esta taska deve ser removida no projeto final
-  xTaskCreate(usart_1_fcn,    /* Nome da funcao que contem a task */
-  		  	  "usart1fcn",     /* Nome descritivo */
-			  configMINIMAL_STACK_SIZE,   /* tamanho da pilha da task */
-			  NULL,       /* parametro para a task */
-			  1,          /* nivel de prioridade */
-			  NULL);      /* ponteiro para o handle da task */
+//  xTaskCreate(usart_1_fcn,    /* Nome da funcao que contem a task */
+//  		  	  "usart1fcn",     /* Nome descritivo */
+//			  configMINIMAL_STACK_SIZE,   /* tamanho da pilha da task */
+//			  NULL,       /* parametro para a task */
+//			  1,          /* nivel de prioridade */
+//			  NULL);      /* ponteiro para o handle da task */
   /* USER CODE END RTOS_THREADS */
 
   /* Start scheduler */

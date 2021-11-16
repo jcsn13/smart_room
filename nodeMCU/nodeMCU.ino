@@ -96,19 +96,12 @@ void setup()
 }
 
 void loop() // run over and over
-{
-    delay(100);
-
+{   
     // Set Temperature
-//    if(Firebase.RTDB.getInt(&fbdo, "LED")) {
-//      if(fbdo.intData() == 1){
-//        SSerial.write("D");
-//      } else {
-//        SSerial.write("L");
-//      }
-//    }
-
-    delay(100);
+    unsigned long temp = 30;
+    Serial.println(SSerial.read());
+    temp = SSerial.parseInt();
+    Serial.printf("Set int... %s\n", Firebase.RTDB.setInt(&fbdo, "TEMP", temp) ? "ok" : fbdo.errorReason().c_str());
     
     // Change LED State
     if(Firebase.RTDB.getInt(&fbdo, "LED")) {
@@ -118,8 +111,6 @@ void loop() // run over and over
         SSerial.write("D");
       }
     }
-
-    delay(100);
     
     // Change AC State
     if(Firebase.RTDB.getInt(&fbdo, "AC")) {
@@ -129,8 +120,6 @@ void loop() // run over and over
         SSerial.write("Z");
       }
     }
-
-    delay(100);
 
     // Change Door State
     if(Firebase.RTDB.getInt(&fbdo, "DOOR")) {
