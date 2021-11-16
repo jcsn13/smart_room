@@ -113,7 +113,7 @@ void loop() // run over and over
     }
     
     // Change AC State
-    if(Firebase.RTDB.getInt(&fbdo, "AC")) {
+    if(Firebase.RTDB.getInt(&fbdo, "ALARM")) {
       if(fbdo.intData() == 1){
         SSerial.write("A");
       } else {
