@@ -64,6 +64,7 @@ void StartDefaultTask(void const * argument);
 void changeLedState(uint8_t mode);
 int8_t readVoltage(void);
 void changeDoorState(uint8_t mode);
+void changeAlarmState(uint8_t mode);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -73,6 +74,7 @@ void changeDoorState(uint8_t mode);
 //pode enfileirar um numero maior de bytes de forma muito rapida
 #define TX_QUEUE_SIZE 128
 #define RX_QUEUE_SIZE 5
+#define TIMER_MAX 200
 #define USART_1 1
 #define USART_2 2
 
@@ -84,6 +86,9 @@ QueueHandle_t rx_queue_2;
 SemaphoreHandle_t uart_1_mutex = NULL;
 SemaphoreHandle_t uart_2_mutex = NULL;
 uint8_t door_state = 1;
+uint8_t timer = 0;
+uint8_t alarm_ring = 0;
+uint8_t alarm_state = 0;
 
 void sendchar(char c, char usart){
 	if(usart == USART_1){
@@ -138,10 +143,10 @@ void cli(void * vParam)
 						changeDoorState(0);
 						break;
 					case 'A':
-//						changeAlarmState(1);
+						changeAlarmState(1);
 						break;
 					case 'Z':
-//						changeAlarmState(0);
+						changeAlarmState(0);
 						break;
 				}
 	}
@@ -150,6 +155,16 @@ void cli(void * vParam)
 
 void changeLedState(uint8_t mode){
 	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, mode);
+}
+
+void changeAlarmState(uint8_t mode){
+	if(mode == 1){
+		alarm_state = mode;
+		timer = 1;
+		HAL_TIM_Base_Start_IT(&htim2);
+	} else {
+		alarm_state = 0;
+	}
 }
 
 int8_t readVoltage(void){
@@ -287,16 +302,7 @@ int main(void)
   uart_2_mutex = xSemaphoreCreateMutex();
 
 
-	HAL_TIM_Base_Start(&htim3);
-//	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_2);
-//	__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_2, 20);
-//	vTaskDelay(20000);
-//	HAL_TIM_PWM_Stop(&htim3,TIM_CHANNEL_2);
-//	__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_2, 100);
-//	vTaskDelay(2000);
-//	__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_2, 75);
-//	vTaskDelay(2000);
-//	__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_2, 50);
+  HAL_TIM_Base_Start(&htim3);
 
   /* USER CODE END 2 */
 
@@ -471,14 +477,15 @@ static void MX_TIM2_Init(void)
 
   TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
 
   /* USER CODE BEGIN TIM2_Init 1 */
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 15;
+  htim2.Init.Prescaler = 127;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 9999;
+  htim2.Init.Period = 2000-1;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
@@ -490,15 +497,28 @@ static void MX_TIM2_Init(void)
   {
     Error_Handler();
   }
+  if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
   {
     Error_Handler();
   }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
   /* USER CODE BEGIN TIM2_Init 2 */
 
   /* USER CODE END TIM2_Init 2 */
+  HAL_TIM_MspPostInit(&htim2);
 
 }
 
@@ -767,8 +787,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 0 */
 
   /* USER CODE END Callback 0 */
-  if (htim->Instance == TIM1) {
-    HAL_IncTick();
+  if (htim->Instance == htim2.Instance && alarm_state == 1 && timer >= 1) {
+	  if(timer <= 20){
+		  timer++;
+	  } else {
+			HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+			HAL_TIM_Base_Stop_IT(&htim2);
+			timer = 0;
+	  }
   }
   /* USER CODE BEGIN Callback 1 */
 
