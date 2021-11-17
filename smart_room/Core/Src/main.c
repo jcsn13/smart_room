@@ -63,6 +63,7 @@ void StartDefaultTask(void const * argument);
 /* USER CODE BEGIN PFP */
 void changeLedState(uint8_t mode);
 int8_t readVoltage(void);
+void changeAlarmState(uint8_t mode);
 void changeDoorState(uint8_t mode);
 /* USER CODE END PFP */
 
@@ -83,6 +84,10 @@ QueueHandle_t tx_queue_2;
 QueueHandle_t rx_queue_2;
 SemaphoreHandle_t uart_1_mutex = NULL;
 SemaphoreHandle_t uart_2_mutex = NULL;
+uint8_t door_state = 1;
+uint8_t alarm_state = 0;
+uint8_t timer = 0;
+
 
 void sendchar(char c, char usart){
 	if(usart == USART_1){
@@ -151,6 +156,17 @@ void changeLedState(uint8_t mode){
 	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, mode);
 }
 
+void changeAlarmState(uint8_t mode){
+	if(mode == 1 && alarm_state == 0){
+		HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_2);
+		__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_2, 100);
+		vTaskDelay(200);
+		HAL_TIM_PWM_Stop(&htim3,TIM_CHANNEL_2);
+		alarm_state = 1;
+
+	}
+}
+
 int8_t readVoltage(void){
 	HAL_ADC_Start(&hadc1);
 	HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
@@ -158,17 +174,19 @@ int8_t readVoltage(void){
 }
 
 void changeDoorState(uint8_t mode){
-	if(mode == 1){
-		//2ms Pwm - Servo motor arm rotates to 180 degree
+	if(mode == 1 && door_state == 0){
 		HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_2);
-//		__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_2, 100);
-
-
-	} else if(mode == 0){
-		//1ms Pwm - Servo motor arm rotates to 0 degree
-//		__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_2, 50);
-
+		__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_2, 100);
+		vTaskDelay(200);
 		HAL_TIM_PWM_Stop(&htim3,TIM_CHANNEL_2);
+		door_state = 1;
+
+	} else if(mode == 0 && door_state == 1){
+		HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_2);
+		__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_2, 50);
+		vTaskDelay(200);
+		HAL_TIM_PWM_Stop(&htim3,TIM_CHANNEL_2);
+		door_state = 0;
 	}
 }
 
@@ -282,18 +300,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   uart_1_mutex = xSemaphoreCreateMutex();
   uart_2_mutex = xSemaphoreCreateMutex();
-
-
-	HAL_TIM_Base_Start(&htim3);
-//	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_2);
-//	__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_2, 20);
-//	vTaskDelay(20000);
-//	HAL_TIM_PWM_Stop(&htim3,TIM_CHANNEL_2);
-//	__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_2, 100);
-//	vTaskDelay(2000);
-//	__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_2, 75);
-//	vTaskDelay(2000);
-//	__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_2, 50);
+  HAL_TIM_Base_Start(&htim3);
 
   /* USER CODE END 2 */
 
